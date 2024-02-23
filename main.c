@@ -10,6 +10,17 @@ typedef uint8_t u8;
 typedef uint32_t u32;
 typedef int32_t i32;
 
+u32 run_length(char* code, u32 code_size, u32 *ptr, char consuming) {
+	u32 i = 0;
+	while (*ptr < code_size) {
+		if (!strchr("+-><.,[]", code[*ptr]) != !(code[(*ptr)] == consuming)) break;
+		if (code[*ptr] == consuming) i++;
+		(*ptr)++;
+	} (*ptr)--;
+
+	return i;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc < 2) return 1;
 
@@ -34,7 +45,7 @@ int main(int argc, char *argv[]) {
 	puts("entry main");
 
 	puts("segment readable writable");
-	puts("	tape db 1024 dup (0)");
+	puts("	tape db 256 dup 0");
 
 	puts("segment readable executable");
 
@@ -57,8 +68,8 @@ int main(int argc, char *argv[]) {
 	puts(" 		ret");
 
 	puts("	main:");
- 	puts("		mov rdx, 1"); // 1 byte
- 	puts("		lea rsi, [tape]"); // 1 byte
+ 	puts("		mov rdx, 1"); // 1 bytes
+ 	puts("		lea rsi, [tape]");
 	putchar('\n');
 
 	{
@@ -73,22 +84,30 @@ int main(int argc, char *argv[]) {
 
 			switch (cur) {
 				case '+': {
-					puts("\t\tinc byte [rsi] ; +");
+					u32 i = run_length(code, code_size, &n, '+');
+
+					printf("\t\tadd byte [rsi], %u ; +\n", i);
 					break;
 				}
 
 				case '-': {
-					puts("\t\tdec byte [rsi] ; -");
+					u32 i = run_length(code, code_size, &n, '-');
+
+					printf("\t\tsub byte [rsi], %u ; -\n", i);
 					break;
 				}
 
 				case '>': {
-					puts("\t\tinc rsi ; >");
+					u32 i = run_length(code, code_size, &n, '>');
+
+					printf("\t\tadd rsi, %u ; >\n", i);
 					break;
 				}
 
 				case '<': {
-					puts("\t\tdec rsi ; <");
+					u32 i = run_length(code, code_size, &n, '<');
+
+					printf("\t\tsub rsi, %u ; <\n", i);
 					break;
 				}
 
